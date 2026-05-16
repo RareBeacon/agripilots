@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AgriPilot — AI Farm Intelligence for Ogbomoso</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,900;1,300&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0d1a0f;
+      --bg2: #111f13;
+      --card: #152018;
+      --border: #1e3322;
+      --green: #4ade80;
+      --green-dim: #22c55e;
+      --green-glow: rgba(74, 222, 128, 0.15);
+      --amber: #fbbf24;
+      --text: #e8f5ea;
+      --muted: #6b8c72;
+      --danger: #f87171;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 20% -20%, rgba(74,222,128,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(34,197,94,0.06) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .grain {
+      position: fixed;
+      inset: 0;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 2;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 20px 60px;
+    }
+
+    /* Header */
+    header {
+      padding: 40px 0 32px;
+      text-align: center;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--green-glow);
+      border: 1px solid rgba(74,222,128,0.25);
+      border-radius: 100px;
+      padding: 6px 16px 6px 8px;
+      margin-bottom: 20px;
+    }
+
+    .logo-dot {
+      width: 28px;
+      height: 28px;
+      background: var(--green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .logo-badge span {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--green);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2.4rem, 7vw, 3.6rem);
+      font-weight: 900;
+      line-height: 1.05;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--green);
+    }
+
+    .tagline {
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 300;
+      max-width: 440px;
+      margin: 0 auto 28px;
+      line-height: 1.6;
+    }
+
+    /* API Key Section */
+    .api-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 28px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .api-section label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      width: 100%;
+    }
+
+    .api-section input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.2s;
+      min-width: 200px;
+    }
+
+    .api-section input:focus {
+      border-color: var(--green-dim);
+    }
+
+    .api-section input::placeholder { color: var(--muted); }
+
+    .btn-save {
+      background: var(--green);
+      color: #0d1a0f;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn-save:hover { opacity: 0.85; }
+
+    .api-status {
+      width: 100%;
+      font-size: 0.78rem;
+      padding: 6px 10px;
+      border-radius: 8px;
+      display: none;
+    }
+    .api-status.ok { background: rgba(74,222,128,0.1); color: var(--green); display: block; }
+    .api-status.err { background: rgba(248,113,113,0.1); color: var(--danger); display: block; }
+
+    /* Mode Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .tab .tab-icon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+    .tab .tab-label { font-size: 0.82rem; font-weight: 600; color: var(--muted); }
+
+    .tab.active {
+      background: var(--green-glow);
+      border-color: rgba(74,222,128,0.4);
+    }
+    .tab.active .tab-label { color: var(--green); }
+
+    /* Panels */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Chat Panel */
+    .chat-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .messages {
+      min-height: 280px;
+      max-height: 420px;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .msg {
+      display: flex;
+      gap: 10px;
+      animation: fadeUp 0.3s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .msg.user .msg-avatar { background: rgba(251,191,36,0.15); }
+    .msg.bot .msg-avatar { background: var(--green-glow); border: 1px solid rgba(74,222,128,0.2); }
+
+    .msg-bubble {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      line-height: 1.65;
+      flex: 1;
+    }
+
+    .msg.bot .msg-bubble {
+      background: rgba(20, 38, 22, 0.8);
+      border-color: rgba(74,222,128,0.15);
+    }
+
+    .msg-bubble strong { color: var(--green); }
+    .msg-bubble em { color: var(--amber); font-style: normal; }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty-state p { font-size: 0.85rem; line-height: 1.6; }
+
+    .chat-input-row {
+      display: flex;
+      gap: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .chat-input-row textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 16px 18px;
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.9rem;
+      resize: none;
+      outline: none;
+      min-height: 56px;
+      max-height: 120px;
+    }
+
+    .chat-input-row textarea::placeholder { color: var(--muted); }
+
+    .btn-send {
+      background: var(--green);
+      color: #0d1a0f;
+      border: none;
+      padding: 0 22px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      font-weight: 700;
+    }
+    .btn-send:hover { opacity: 0.85; }
+    .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .quick-prompts {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .qp {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Outfit', sans-serif;
+    }
+    .qp:hover { border-color: var(--green-dim); color: var(--green); }
+
+    /* Plant Scanner Panel */
+    .scanner-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      margin: 20px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--green-dim);
+      background: var(--green-glow);
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .upload-zone h3 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+    .upload-zone p { font-size: 0.82rem; color: var(--muted); }
+
+    .preview-img {
+      width: 100%;
+      max-height: 280px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin: 20px 20px 0;
+      width: calc(100% - 40px);
+      display: none;
+      border: 1px solid var(--border);
+    }
+
+    .scan-actions {
+      padding: 16px 20px 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-scan {
+      flex: 1;
+      background: var(--green);
+      color: #0d1a0f;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-scan:hover { opacity: 0.85; }
+    .btn-scan:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-clear {
+      background: var(--bg2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-clear:hover { color: var(--danger); border-color: var(--danger); }
+
+    /* Result Card */
+    .result-card {
+      margin: 0 20px 20px;
+      background: var(--bg2);
+      border: 1px solid rgba(74,222,128,0.2);
+      border-radius: 12px;
+      padding: 20px;
+      display: none;
+      animation: fadeUp 0.4s ease;
+    }
+
+    .result-card.visible { display: block; }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .plant-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--green-glow);
+      border: 1px solid rgba(74,222,128,0.25);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+
+    .plant-name {
+      font-family: 'Fraunces', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+
+    .plant-yoruba {
+      font-size: 0.8rem;
+      color: var(--amber);
+      margin-top: 2px;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 480px) { .result-grid { grid-template-columns: 1fr; } }
+
+    .result-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .result-item .ri-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .result-item .ri-value {
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .condition-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .condition-badge.healthy { background: rgba(74,222,128,0.15); color: var(--green); }
+    .condition-badge.sick { background: rgba(248,113,113,0.1); color: var(--danger); }
+    .condition-badge.moderate { background: rgba(251,191,36,0.1); color: var(--amber); }
+
+    .action-box {
+      background: rgba(74,222,128,0.06);
+      border: 1px solid rgba(74,222,128,0.15);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .action-box .ab-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--green);
+      margin-bottom: 6px;
+    }
+
+    .action-box .ab-text {
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(13,26,15,0.3);
+      border-top-color: #0d1a0f;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 32px 0 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+
+    footer strong { color: var(--green); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+
+  <div class="wrapper">
+    <header>
+      <div class="logo-badge">
+        <div class="logo-dot">🌿</div>
+        <span>AgriPilot — Powered by AI</span>
+      </div>
+      <h1>Farm smarter.<br/><em>Grow stronger.</em></h1>
+      <p class="tagline">AI-powered crop intelligence for Ogbomoso farmers. Ask anything. Scan any plant. Get expert advice instantly.</p>
+    </header>
+
+    <!-- API Key -->
+    <div class="api-section">
+      <label>🔑 Gemini API Key (stored locally, never sent to any server)</label>
+      <input type="password" id="apiKeyInput" placeholder="Paste your Gemini API key here..." />
+      <button class="btn-save" onclick="saveKey()">Save Key</button>
+      <div class="api-status" id="apiStatus"></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('chat', this)">
+        <span class="tab-icon">💬</span>
+        <span class="tab-label">Ask a Question</span>
+      </div>
+      <div class="tab" onclick="switchTab('scanner', this)">
+        <span class="tab-icon">🔬</span>
+        <span class="tab-label">Plant Scanner</span>
+      </div>
+    </div>
+
+    <!-- Chat Panel -->
+    <div class="panel active" id="panel-chat">
+      <div class="chat-box">
+        <div class="messages" id="messages">
+          <div class="empty-state">
+            <div class="empty-icon">🌾</div>
+            <p>Ask AgriPilot anything about your farm —<br/>planting, pests, prices, soil, seasons, and more.</p>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <textarea id="chatInput" placeholder="e.g. When is the best time to plant maize in Ogbomoso?" rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"
+            oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+          <button class="btn-send" id="sendBtn" onclick="sendMessage()">↑</button>
+        </div>
+      </div>
+
+      <div class="quick-prompts">
+        <button class="qp" onclick="quickPrompt('Best time to plant maize in Ogbomoso?')">🌽 Maize planting season</button>
+        <button class="qp" onclick="quickPrompt('How do I control pests on my tomato farm?')">🍅 Tomato pest control</button>
+        <button class="qp" onclick="quickPrompt('What is the current price of yam in Ogbomoso market?')">💰 Yam market price</button>
+        <button class="qp" onclick="quickPrompt('How can I improve my soil fertility naturally?')">🌱 Soil improvement tips</button>
+        <button class="qp" onclick="quickPrompt('What crops grow best in Oyo State during rainy season?')">🌧 Rainy season crops</button>
+      </div>
+    </div>
+
+    <!-- Plant Scanner Panel -->
+    <div class="panel" id="panel-scanner">
+      <div class="scanner-card">
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="plantImage" accept="image/*" onchange="handleImage(this)" />
+          <div class="upload-icon">📸</div>
+          <h3>Upload or take a plant photo</h3>
+          <p>Drag & drop or click to select<br/>Works with any crop, leaf, or fruit</p>
+        </div>
+
+        <img class="preview-img" id="previewImg" src="" alt="Plant preview" />
+
+        <div class="scan-actions">
+          <button class="btn-scan" id="scanBtn" onclick="scanPlant()" disabled>
+            <span>🔬</span> Analyse Plant
+          </button>
+          <button class="btn-clear" onclick="clearScan()">Clear</button>
+        </div>
+
+        <div class="result-card" id="resultCard">
+          <div class="result-header">
+            <div class="plant-icon">🌿</div>
+            <div>
+              <div class="plant-name" id="plantName">—</div>
+              <div class="plant-yoruba" id="plantYoruba">—</div>
+            </div>
+          </div>
+
+          <div class="result-grid">
+            <div class="result-item">
+              <div class="ri-label">📋 Condition</div>
+              <div class="ri-value" id="plantCondition">—</div>
+            </div>
+            <div class="result-item">
+              <div class="ri-label">🍃 Uses</div>
+              <div class="ri-value" id="plantUses">—</div>
+            </div>
+            <div class="result-item" style="grid-column: 1 / -1;">
+              <div class="ri-label">✨ Effects & Benefits</div>
+              <div class="ri-value" id="plantEffects">—</div>
+            </div>
+          </div>
+
+          <div class="action-box">
+            <div class="ab-label">🚜 Recommended Action</div>
+            <div class="ab-text" id="plantAction">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Built by <strong>Phos Lab</strong> · AgriPilot Demo · OORC Ideation 2026</p>
+      <p style="margin-top:6px;">Ogbomoso, Oyo State, Nigeria &nbsp;·&nbsp; phoslab.io</p>
+    </footer>
+  </div>
+
+  <script>
+    // ── State ──────────────────────────────────────────────
+    let apiKey = localStorage.getItem('agripilot_key') || '';
+    let imageBase64 = null;
+    let imageMime = null;
+
+    // ── Init ──────────────────────────────────────────────
+    window.onload = () => {
+      if (apiKey) {
+        document.getElementById('apiKeyInput').value = apiKey;
+        showStatus('API key loaded ✓', true);
+      }
+    };
+
+    // ── API Key ───────────────────────────────────────────
+    function saveKey() {
+      const val = document.getElementById('apiKeyInput').value.trim();
+      if (!val) { showStatus('Please enter your API key.', false); return; }
+      apiKey = val;
+      localStorage.setItem('agripilot_key', val);
+      showStatus('API key saved ✓', true);
+    }
+
+    function showStatus(msg, ok) {
+      const el = document.getElementById('apiStatus');
+      el.textContent = msg;
+      el.className = 'api-status ' + (ok ? 'ok' : 'err');
+    }
+
+    // ── Tabs ──────────────────────────────────────────────
+    function switchTab(name, el) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('panel-' + name).classList.add('active');
+    }
+
+    // ── Chat ──────────────────────────────────────────────
+    const CHAT_SYSTEM = `You are AgriPilot, a friendly and knowledgeable AI farming assistant built specifically for smallholder farmers in Ogbomoso, Oyo State, Nigeria.
+
+Your role:
+- Give practical, localised farming advice relevant to Ogbomoso's climate, soil, and market
+- Answer questions about crop planting, pest control, soil health, irrigation, harvest, and market prices
+- Be warm, encouraging, and simple — many farmers are not highly educated
+- Use Yoruba plant/crop names where you know them (alongside English)
+- Keep responses concise and actionable — farmers are busy people
+- When you don't know something, say so honestly
+
+Format responses clearly. Use short paragraphs. If listing steps, number them. Never use markdown headers.`;
+
+    let chatHistory = [];
+
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+      if (!apiKey) { showStatus('Please save your Gemini API key first.', false); return; }
+
+      appendMsg('user', text);
+      input.value = '';
+      input.style.height = 'auto';
+      document.getElementById('sendBtn').disabled = true;
+
+      const thinkingId = appendMsg('bot', '<span class="spinner"></span> Thinking...');
+      chatHistory.push({ role: 'user', parts: [{ text }] });
+
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: CHAT_SYSTEM }] },
+              contents: chatHistory,
+              generationConfig: { temperature: 0.7, maxOutputTokens: 800 }
+            })
+          }
+        );
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message);
+
+        const reply = data.candidates[0].content.parts[0].text;
+        chatHistory.push({ role: 'model', parts: [{ text: reply }] });
+        updateMsg(thinkingId, formatText(reply));
+      } catch (err) {
+        updateMsg(thinkingId, '⚠️ Error: ' + err.message);
+      }
+
+      document.getElementById('sendBtn').disabled = false;
+    }
+
+    function quickPrompt(text) {
+      document.getElementById('chatInput').value = text;
+      sendMessage();
+    }
+
+    function appendMsg(role, html) {
+      const container = document.getElementById('messages');
+      const empty = container.querySelector('.empty-state');
+      if (empty) empty.remove();
+
+      const id = 'msg-' + Date.now();
+      const avatar = role === 'user' ? '👨‍🌾' : '🌿';
+      const div = document.createElement('div');
+      div.className = 'msg ' + role;
+      div.id = id;
+      div.innerHTML = `
+        <div class="msg-avatar">${avatar}</div>
+        <div class="msg-bubble">${html}</div>
+      `;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+      return id;
+    }
+
+    function updateMsg(id, html) {
+      const el = document.getElementById(id);
+      if (el) el.querySelector('.msg-bubble').innerHTML = html;
+      document.getElementById('messages').scrollTop = 99999;
+    }
+
+    function formatText(text) {
+      return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n\n/g, '<br/><br/>')
+        .replace(/\n/g, '<br/>');
+    }
+
+    // ── Plant Scanner ─────────────────────────────────────
+    function handleImage(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      imageMime = file.type;
+      const reader = new FileReader();
+      reader.onload = e => {
+        imageBase64 = e.target.result.split(',')[1];
+        const preview = document.getElementById('previewImg');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        document.getElementById('scanBtn').disabled = false;
+        document.getElementById('resultCard').classList.remove('visible');
+        document.getElementById('uploadZone').style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    const SCAN_PROMPT = `You are AgriPilot, an expert plant identification and agricultural AI for Nigerian farmers in Ogbomoso, Oyo State.
+
+Analyze this plant image and respond ONLY in this exact JSON format (no markdown, no extra text):
+
+{
+  "name": "Common English plant name",
+  "yoruba_name": "Yoruba name for this plant (if known, else write 'Not widely known in Yoruba')",
+  "condition": "one of: Healthy / Diseased / Nutrient Deficient / Pest Damaged / Unknown",
+  "uses": "brief description of food, medicinal, or commercial uses (2-3 sentences max)",
+  "effects": "key benefits or effects of this plant for humans, animals, or soil (2-3 sentences max)",
+  "action": "specific, practical advice for a farmer in Ogbomoso on what to do with or about this plant right now (3-4 sentences)"
+}
+
+If you cannot identify the plant clearly, still fill all fields with your best assessment and note uncertainty in the 'name' field.`;
+
+    async function scanPlant() {
+      if (!imageBase64) return;
+      if (!apiKey) { showStatus('Please save your Gemini API key first.', false); return; }
+
+      const btn = document.getElementById('scanBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Analysing...';
+
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: SCAN_PROMPT },
+                  { inline_data: { mime_type: imageMime, data: imageBase64 } }
+                ]
+              }],
+              generationConfig: { temperature: 0.3, maxOutputTokens: 600 }
+            })
+          }
+        );
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message);
+
+        let raw = data.candidates[0].content.parts[0].text.trim();
+        raw = raw.replace(/```json|```/g, '').trim();
+        const result = JSON.parse(raw);
+        renderResult(result);
+      } catch (err) {
+        alert('Analysis failed: ' + err.message + '\n\nMake sure your API key is correct.');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<span>🔬</span> Analyse Plant';
+    }
+
+    function renderResult(r) {
+      document.getElementById('plantName').textContent = r.name || '—';
+      document.getElementById('plantYoruba').textContent = '🗣 Yoruba: ' + (r.yoruba_name || 'Unknown');
+      document.getElementById('plantUses').textContent = r.uses || '—';
+      document.getElementById('plantEffects').textContent = r.effects || '—';
+      document.getElementById('plantAction').textContent = r.action || '—';
+
+      const cond = r.condition || 'Unknown';
+      const badge = document.getElementById('plantCondition');
+      const cls = cond.toLowerCase().includes('healthy') ? 'healthy'
+                : cond.toLowerCase().includes('disease') || cond.toLowerCase().includes('pest') ? 'sick'
+                : 'moderate';
+      badge.innerHTML = `<span class="condition-badge ${cls}">● ${cond}</span>`;
+
+      document.getElementById('resultCard').classList.add('visible');
+      document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function clearScan() {
+      imageBase64 = null;
+      imageMime = null;
+      document.getElementById('previewImg').style.display = 'none';
+      document.getElementById('previewImg').src = '';
+      document.getElementById('plantImage').value = '';
+      document.getElementById('scanBtn').disabled = true;
+      document.getElementById('resultCard').classList.remove('visible');
+      document.getElementById('uploadZone').style.display = 'block';
+    }
+
+    // Drag & drop
+    const zone = document.getElementById('uploadZone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        document.getElementById('plantImage').files = dt.files;
+        handleImage(document.getElementById('plantImage'));
+      }
+    });
+  </script>
+</body>
+</html>
